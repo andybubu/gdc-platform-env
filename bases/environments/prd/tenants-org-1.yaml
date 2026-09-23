@@ -1,0 +1,121 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+prd:
+  gdc_tenants:
+    org-1:
+      global:
+        kube_context_global: "global-api-gdch_console-org-1-zone1-google-gdch-prd_global-api"
+        kube_context_zonal: "org-1-admin-zone1-gdch_console-org-1-zone1-google-gdch-prd_zone1_org-1-admin"
+        admin_subject_name: &admin_subject_name "retail-admin@example.com"
+        shared_infra_project_names: &shared_infra_project_names ["retail-storefront"]
+        iamrolebindings:
+          - role: "user-cluster-node-viewer"
+          - role: "user-cluster-crd-viewer"
+        rbacrolebindings: []
+        org_policies: []
+        org_network_policies: []
+        projects:
+          - name: "retail-storefront"
+            iamrolebindings:
+              - role: "project-iam-admin"
+              - role: "secret-admin"
+              - role: "namespace-admin"
+              - role: "project-bucket-admin"
+              - role: "project-vm-admin"
+              - role: "project-networkpolicy-admin"
+              - role: "project-bucket-object-admin"
+              - role: "project-bucket-object-viewer"
+              - role: "workload-viewer"
+              - role: "backup-creator"
+              - role: "harbor-instance-admin"
+              - role: "harbor-project-creator"
+              - role: "dashboard-editor"
+              - role: "workbench-notebooks-admin"
+            serviceaccounts:
+              - name: "retail-app-sa"
+                namespace: "retail-storefront"
+            resources:
+              harbors:
+                - name: "retail-harbor"
+                  autoscan: true
+                  creatorkind: "User"
+                  creatorname: *admin_subject_name
+              vms:
+                - name: "retail-web-vm"
+                  image_name: "ubuntu-24.04-v20260601-gdch"
+                  image_namespace: "vm-system"
+                  boot_disk_size: "20Gi"
+                  machine_type: "n3-standard-2-gdc"
+                  ssh:
+                    uiAccessEnabled: true
+                    createProjectNetworkPolicy: true
+              buckets:
+                - name: "retail-assets"
+                  description: "Retail static assets storage"
+                  storage_class: "Standard"
+                  location: "zone1"
+                - name: "retail-data-lake"
+                  description: "Retail transaction logs and datasets"
+                  storage_class: "Standard"
+                  location: "zone1"
+              project_network_policies:
+                - name: "allow-platform-ingress"
+                  ingress:
+                  - from:
+                    - project_selector:
+                        projects:
+                          match_names:
+                          - "retail-storefront"
+              dashboards:
+                - name: "retail-metrics-dash"
+                  json_model: '{"title": "Retail Operations Overview"}'
+        clusters:
+          - name: "retail-k8s-cluster"
+            namespace: "platform"
+            clusterNetwork:
+              podCIDRSize: 21
+              serviceCIDRSize: 23
+            initialVersion:
+              kubernetesVersion: "1.35.3-gke.400"
+            loadBalancer:
+              ingressServiceIPSize: 21
+            nodePools:
+              - name: "worker-pool"
+                machineTypeName: "n3-standard-4-gdc"
+                nodeCount: 3
+            projectBindings: *shared_infra_project_names
+          - name: "retail-user-cluster"
+            namespace: "retail-storefront"
+            clusterNetwork:
+              podCIDRSize: 21
+              serviceCIDRSize: 23
+            initialVersion:
+              kubernetesVersion: "1.35.3-gke.400"
+            loadBalancer:
+              ingressServiceIPSize: 21
+            nodePools:
+              - name: "user-worker-pool"
+                machineTypeName: "n3-standard-4-gdc"
+                nodeCount: 2
+            projectBindings: *shared_infra_project_names
+        notebooks:
+          - name: "retail-analytics-nb"
+            project: "retail-storefront"
+            nb_jupyter_image: "gcr.io/private-cloud-staging/notebooks/deeplearning-platform-release/pytorch-gpu:m125_ext"
+            user_cluster_name: "retail-k8s-cluster"
+            cpu_limit: "2"
+            memory_limit: "4Gi"
+            serviceAccountName: "retail-app-sa"

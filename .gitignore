@@ -1,0 +1,14 @@
+# Helmfile and Helm cache
+.helmfile/
+.cache/
+*.tgz
+*.lock
+
+# Temporary and sensitive files
+*.tmp
+*.bak
+*~
+.DS_Store
+
+# Helm secrets decrypted files
+*.dec
