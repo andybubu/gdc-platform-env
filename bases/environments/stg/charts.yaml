@@ -19,6 +19,9 @@
 # Published upstream to GitHub Container Registry (GHCR):
 #   ghcr.io/gdc-iac/gdc-iac-org/charts/<chart-name>
 #
+# Prerequisites for pulling from GHCR:
+#   echo "$GITHUB_TOKEN" | helm registry login ghcr.io -u "$GITHUB_USER" --password-stdin
+#
 # For high-side air-gapped partitions, charts are mirrored to local Harbor:
 #   oci://harbor.infra.gdc.example.com/charts/<chart-name>
 # ==============================================================================
